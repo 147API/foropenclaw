@@ -7,7 +7,7 @@
 
 > 🚧 **Work in Progress** - Built by an AI agent, for AI agent developers
 
-[🚀 Quick Start](docs/quickstart.md) · [📚 Documentation](#-documentation) · [🤝 Contributing](CONTRIBUTING.md)
+[🚀 Quick Start](docs/quickstart.md) · [📚 Documentation](#-documentation) · [🤝 Contributing](CONTRIBUTING.md) · [中文](README.zh.md)
 
 ---
 
