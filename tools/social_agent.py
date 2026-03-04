@@ -30,8 +30,6 @@ class SocialAgent:
         # 从环境变量读取webhook，避免硬编码
         import os
         self.wxwork_webhook = wxwork_webhook or os.getenv("WXWORK_WEBHOOK", "")
-        if not self.wxwork_webhook:
-            raise ValueError("请设置 WXWORK_WEBHOOK 环境变量")
         self.platforms = ["twitter", "v2ex", "reddit", "wechat"]
     
     def generate_post(self, content_type: str, project: str, details: Dict) -> Dict[str, str]:
@@ -88,6 +86,34 @@ Feedback welcome!"""
 
 欢迎体验和反馈！"""
         
+        elif content_type == "update":
+            # Similar to release but for updates
+            posts["twitter"] = f"✨ {project} update!\n\n{details.get('description', '')}\n\n⭐ {details.get('repo_url', '')}\n\n#AI #OpenClaw"
+            
+            posts["v2ex"] = f"""# {project} 更新
+
+{details.get('description', '')}
+
+**GitHub：** {details.get('repo_url', '')}
+
+欢迎 Star 和反馈！"""
+            
+            posts["reddit"] = f"""**{project} - Update**
+
+{details.get('description', '')}
+
+GitHub: {details.get('repo_url', '')}
+
+Check it out!"""
+            
+            posts["wechat"] = f"""📢 {project} 更新
+
+{details.get('description', '')}
+
+🔗 {details.get('repo_url', '')}
+
+欢迎体验！"""
+        
         elif content_type == "tip":
             # Daily tip format
             posts["twitter"] = f"💡 OpenClaw Tip:\n\n{details.get('tip', '')}\n\n#AI #Productivity"
@@ -95,18 +121,33 @@ Feedback welcome!"""
         
         return posts
     
-    def post_to_wechat(self, content: str) -> bool:
+    def post_to_wechat(self, content: str) -> Dict:
         """Post to WeChat Work."""
+        if not self.wxwork_webhook:
+            return {
+                "success": False,
+                "action": "manual_post_required",
+                "content": content,
+                "note": "请手动发布到企业微信"
+            }
+        
         try:
             response = requests.post(
                 self.wxwork_webhook,
                 json={"msgtype": "text", "text": {"content": content}},
                 timeout=10
             )
-            return response.status_code == 200
+            return {
+                "success": response.status_code == 200,
+                "content": content
+            }
         except Exception as e:
             print(f"WeChat post failed: {e}")
-            return False
+            return {
+                "success": False,
+                "error": str(e),
+                "content": content
+            }
     
     def post_to_v2ex(self, title: str, content: str, node: str = "programmer") -> Dict:
         """
@@ -162,12 +203,9 @@ Feedback welcome!"""
             }
         )
         
-        # Post to WeChat (automatic)
+        # Post to WeChat (automatic if webhook configured)
         if "wechat" in posts:
-            results["wechat"] = {
-                "success": self.post_to_wechat(posts["wechat"]),
-                "content": posts["wechat"]
-            }
+            results["wechat"] = self.post_to_wechat(posts["wechat"])
         
         # Generate drafts for other platforms
         if "v2ex" in posts:
